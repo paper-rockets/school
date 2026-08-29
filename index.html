@@ -303,6 +303,8 @@
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
 
+    let lastKnownTimestamp = 0;
+
     function updateProgress() {
       const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
       const percent = Math.round((checkedCount / totalItems) * 100);
@@ -314,7 +316,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       let id = urlParams.get('list');
       if (!id) {
-        id = 'school_xalvan';
+        id = 'willingdon_g3_6ty5yx';
         const newUrl = window.location.pathname + '?list=' + id;
         window.history.replaceState(null, '', newUrl);
       }
@@ -322,14 +324,18 @@
     }
 
     const listId = getListId();
-    // Unique unified channel for this list
-    const topic = 'wldg_' + listId.replace(/[^a-zA-Z0-9_]/g, '');
-    const sseUrl = 'https://ntfy.sh/' + topic + '/sse';
-    const pollUrl = 'https://ntfy.sh/' + topic + '/json?poll=1&since=all';
-    const postUrl = 'https://ntfy.sh/' + topic;
+    // Support all topic prefixes
+    const topics = [
+      'willingdon_supply_' + listId,
+      'wldg_' + listId.replace(/[^a-zA-Z0-9_]/g, ''),
+      'school_supply_' + listId
+    ];
 
-    function applyState(checkedIds) {
+    function applyState(checkedIds, timestamp) {
       if (!Array.isArray(checkedIds)) return;
+      if (timestamp && timestamp < lastKnownTimestamp) return;
+      if (timestamp) lastKnownTimestamp = timestamp;
+
       checkboxes.forEach(cb => {
         cb.checked = checkedIds.includes(cb.id);
       });
@@ -351,8 +357,8 @@
       }
     }
 
-    function fetchLatestState() {
-      fetch(pollUrl)
+    function checkTopic(t) {
+      return fetch('https://ntfy.sh/' + t + '/json?poll=1&since=all')
         .then(res => res.text())
         .then(text => {
           const lines = text.trim().split('\n').filter(Boolean);
@@ -363,7 +369,7 @@
                 if (entry && entry.message) {
                   const data = parsePayload(entry.message);
                   if (data && Array.isArray(data.checkedIds)) {
-                    applyState(data.checkedIds);
+                    applyState(data.checkedIds, data.timestamp || entry.time * 1000);
                     statusBar.textContent = 'Status: Connected (Live Sync Active)';
                     break;
                   }
@@ -375,37 +381,44 @@
         .catch(() => {});
     }
 
+    function fetchLatestState() {
+      topics.forEach(t => checkTopic(t));
+    }
+
     function broadcastState() {
       const checkedIds = Array.from(checkboxes)
         .filter(cb => cb.checked)
         .map(cb => cb.id);
 
+      const ts = Date.now();
+      lastKnownTimestamp = ts;
       updateProgress();
       localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
 
       const payload = {
         sender: clientId,
         checkedIds: checkedIds,
-        timestamp: Date.now()
+        timestamp: ts
       };
 
-      fetch(postUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain' },
-        body: JSON.stringify(payload)
-      }).then(() => {
-        statusBar.textContent = 'Status: Connected (Live Sync Active)';
-      }).catch(() => {
-        statusBar.textContent = 'Status: Reconnecting...';
+      // Broadcast across all connected channels
+      topics.forEach(t => {
+        fetch('https://ntfy.sh/' + t, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
       });
+
+      statusBar.textContent = 'Status: Connected (Live Sync Active)';
     }
 
     function startLiveSync() {
-      // 1. Load cached state if available
+      // 1. Local storage load
       try {
         const saved = JSON.parse(localStorage.getItem('local_state_' + listId) || '[]');
         if (Array.isArray(saved) && saved.length > 0) {
-          applyState(saved);
+          applyState(saved, 0);
         } else {
           updateProgress();
         }
@@ -413,42 +426,35 @@
         updateProgress();
       }
 
-      // 2. Fetch latest saved state from cloud
+      // 2. Poll initial state
       fetchLatestState();
 
-      // 3. Set up SSE stream
-      try {
-        const eventSource = new EventSource(sseUrl);
-
-        eventSource.onopen = () => {
-          statusBar.textContent = 'Status: Connected (Live Sync Active)';
-        };
-
-        eventSource.onmessage = (event) => {
-          try {
-            const entry = JSON.parse(event.data);
-            if (entry && entry.message) {
-              const update = parsePayload(entry.message);
-              if (update && update.sender !== clientId && Array.isArray(update.checkedIds)) {
-                applyState(update.checkedIds);
-                statusBar.textContent = 'Status: Updated just now';
-                setTimeout(() => {
-                  statusBar.textContent = 'Status: Connected (Live Sync Active)';
-                }, 2000);
+      // 3. Connect SSE streams
+      topics.forEach(t => {
+        try {
+          const eventSource = new EventSource('https://ntfy.sh/' + t + '/sse');
+          eventSource.onmessage = (event) => {
+            try {
+              const entry = JSON.parse(event.data);
+              if (entry && entry.message) {
+                const update = parsePayload(entry.message);
+                if (update && update.sender !== clientId && Array.isArray(update.checkedIds)) {
+                  applyState(update.checkedIds, update.timestamp || entry.time * 1000);
+                  statusBar.textContent = 'Status: Updated just now';
+                  setTimeout(() => {
+                    statusBar.textContent = 'Status: Connected (Live Sync Active)';
+                  }, 2000);
+                }
               }
-            }
-          } catch (e) {}
-        };
+            } catch (e) {}
+          };
+        } catch (e) {}
+      });
 
-        eventSource.onerror = () => {
-          statusBar.textContent = 'Status: Connected (Live Sync Active)';
-        };
-      } catch (err) {}
+      // 4. Background polling fallback every 2 seconds
+      setInterval(fetchLatestState, 2000);
 
-      // 4. Background polling fallback every 3 seconds for mobile battery/cellular reliability
-      setInterval(fetchLatestState, 3000);
-
-      // 5. Sync when switching back to tab/unlocking screen
+      // 5. Sync on screen unlock/tab active
       window.addEventListener('visibilitychange', () => {
         if (!document.hidden) fetchLatestState();
       });
@@ -460,7 +466,7 @@
       fetchLatestState();
       setTimeout(() => {
         statusBar.textContent = 'Status: Connected (Live Sync Active)';
-      }, 800);
+      }, 600);
     }
 
     function copyShareLink() {
