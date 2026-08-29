@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grade 3 Supply Checklist</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+    .btn-row {
+      margin: 1rem 0;
+      display: flex;
+      gap: 0.5rem;
+    }
+    button {
+      padding: 8px 14px;
+      cursor: pointer;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      background-color: #f7f7f7;
+    }
+    button:hover {
+      background-color: #eee;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      margin: 8px 0;
+    }
+    input:checked + label {
+      text-decoration: line-through;
+      color: #888;
+    }
+    #shareNotice {
+      color: #2e7d32;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Grade 3 Supply Checklist</h2>
+  <div class="btn-row">
+    <button onclick="shareList()">Copy Share Link</button>
+    <button onclick="resetList()">Reset</button>
+  </div>
+  <p id="shareNotice"></p>
+
+  <ul id="list">
+    <li><input type="checkbox" id="i1"><label for="i1"> 1 Waterproof school bag</label></li>
+    <li><input type="checkbox" id="i2"><label for="i2"> 36 HB pencils</label></li>
+    <li><input type="checkbox" id="i3"><label for="i3"> 4 White erasers</label></li>
+    <li><input type="checkbox" id="i4"><label for="i4"> 2 Pencil sharpeners with cover</label></li>
+    <li><input type="checkbox" id="i5"><label for="i5"> 2 Large glue sticks</label></li>
+  </ul>
+
+  <script>
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const STORAGE_KEY = 'supply_list_data';
+
+    function loadState() {
+      const hash = window.location.hash.substring(1);
+      let activeIds = [];
+
+      if (hash) {
+        activeIds = hash.split(',').filter(Boolean);
+      } else {
+        try {
+          activeIds = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        } catch (e) {
+          activeIds = [];
+        }
+      }
+
+      checkboxes.forEach(cb => {
+        cb.checked = activeIds.includes(cb.id);
+      });
+    }
+
+    function saveState() {
+      const checkedIds = Array.from(checkboxes)
+        .filter(cb => cb.checked)
+        .map(cb => cb.id);
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedIds));
+      const hashString = checkedIds.length > 0 ? '#' + checkedIds.join(',') : window.location.pathname;
+      window.history.replaceState(null, '', hashString);
+    }
+
+    function shareList() {
+      saveState();
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const notice = document.getElementById('shareNotice');
+        notice.textContent = 'Link copied to clipboard. Anyone opening it will see your current selections.';
+        setTimeout(() => {
+          notice.textContent = '';
+        }, 4000);
+      }).catch(() => {
+        const notice = document.getElementById('shareNotice');
+        notice.textContent = 'Failed to copy link automatically. You can copy the URL directly from the address bar.';
+      });
+    }
+
+    function resetList() {
+      checkboxes.forEach(cb => {
+        cb.checked = false;
+      });
+      saveState();
+    }
+
+    checkboxes.forEach(cb => cb.addEventListener('change', saveState));
+    window.addEventListener('DOMContentLoaded', loadState);
+  </script>
+</body>
+</html>
