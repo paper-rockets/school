@@ -3,23 +3,55 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grade 3 Supply Checklist</title>
+  <title>Willingdon School - Grade 3 Supplies List (2026-2027)</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      max-width: 600px;
+      max-width: 650px;
       margin: 1.5rem auto;
-      padding: 0 1rem;
+      padding: 0 1rem 3rem 1rem;
       color: #222;
-      background-color: #fafafa;
+      background-color: #f7f9fa;
     }
-    h2 {
-      margin-bottom: 0.25rem;
+    header {
+      background-color: #ffffff;
+      padding: 1.25rem;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 1rem;
+    }
+    h1 {
+      font-size: 1.35rem;
+      margin: 0 0 0.25rem 0;
+      color: #1a202c;
+    }
+    .subtitle {
+      font-size: 0.95rem;
+      color: #4a5568;
+      margin: 0 0 0.75rem 0;
     }
     .status-bar {
       font-size: 0.85rem;
-      color: #555;
-      margin-bottom: 1rem;
+      color: #2b6cb0;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+    .progress-bar-container {
+      background-color: #edf2f7;
+      border-radius: 6px;
+      height: 10px;
+      overflow: hidden;
+      margin: 0.5rem 0 0.25rem 0;
+    }
+    .progress-bar-fill {
+      background-color: #3182ce;
+      height: 100%;
+      width: 0%;
+      transition: width 0.25s ease;
+    }
+    .progress-text {
+      font-size: 0.85rem;
+      color: #718096;
     }
     .btn-row {
       margin: 1rem 0;
@@ -30,31 +62,57 @@
     button {
       padding: 10px 16px;
       font-size: 0.95rem;
+      font-weight: 500;
       cursor: pointer;
       border-radius: 6px;
-      border: 1px solid #ccc;
+      border: 1px solid #cbd5e0;
       background-color: #ffffff;
-      color: #333;
+      color: #2d3748;
     }
     button:active {
-      background-color: #e8e8e8;
+      background-color: #edf2f7;
+    }
+    .btn-primary {
+      background-color: #2b6cb0;
+      color: #ffffff;
+      border-color: #2b6cb0;
+    }
+    .btn-primary:active {
+      background-color: #2c5282;
     }
     .notice {
-      color: #1b5e20;
+      color: #22543d;
+      background-color: #f0fff4;
+      border: 1px solid #c6f6d5;
+      padding: 8px 12px;
+      border-radius: 6px;
       font-size: 0.85rem;
-      min-height: 1.2em;
-      margin-bottom: 0.5rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .section-card {
+      background-color: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      overflow: hidden;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      background-color: #edf2f7;
+      padding: 10px 16px;
+      margin: 0;
+      border-bottom: 1px solid #e2e8f0;
+      color: #2d3748;
     }
     ul {
       list-style: none;
       padding: 0;
       margin: 0;
-      background-color: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
     }
     li {
-      border-bottom: 1px solid #f0f0f0;
+      border-bottom: 1px solid #edf2f7;
     }
     li:last-child {
       border-bottom: none;
@@ -62,79 +120,200 @@
     label {
       display: flex;
       align-items: center;
-      padding: 14px 16px;
+      padding: 12px 16px;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.4;
       user-select: none;
+    }
+    label:active {
+      background-color: #f7fafc;
     }
     input[type="checkbox"] {
       width: 20px;
       height: 20px;
       margin-right: 12px;
+      flex-shrink: 0;
       cursor: pointer;
     }
     input[type="checkbox"]:checked + span {
       text-decoration: line-through;
-      color: #888888;
+      color: #a0aec0;
+    }
+    .instructions-card {
+      background-color: #fffaf0;
+      border: 1px solid #feebc8;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 1.5rem;
+    }
+    .instructions-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1rem;
+      color: #7b341e;
+    }
+    .instructions-card ul {
+      background: none;
+      border: none;
+      padding-left: 1.25rem;
+      list-style: disc;
+    }
+    .instructions-card li {
+      border: none;
+      font-size: 0.9rem;
+      color: #744210;
+      margin-bottom: 0.4rem;
+      padding: 0;
     }
   </style>
 </head>
 <body>
 
-  <h2>Grade 3 Supply Checklist</h2>
-  <div id="statusBar" class="status-bar">Status: Connecting...</div>
+  <header>
+    <h1>Willingdon School</h1>
+    <div class="subtitle">Grade 3 School Supplies List (2026-2027)</div>
+    <div id="statusBar" class="status-bar">Status: Connecting...</div>
+    <div class="progress-bar-container">
+      <div id="progressBar" class="progress-bar-fill"></div>
+    </div>
+    <div id="progressText" class="progress-text">0 of 41 items completed (0%)</div>
+  </header>
 
   <div class="btn-row">
-    <button type="button" onclick="copyShareLink()">Copy Share Link</button>
-    <button type="button" onclick="resetList()">Reset List</button>
+    <button type="button" class="btn-primary" onclick="copyShareLink()">Copy Share Link</button>
+    <button type="button" onclick="resetList()">Reset All</button>
   </div>
   <div id="shareNotice" class="notice"></div>
 
-  <ul id="list">
-    <li>
-      <label>
-        <input type="checkbox" id="i1">
-        <span>1 Waterproof school bag</span>
-      </label>
-    </li>
-    <li>
-      <label>
-        <input type="checkbox" id="i2">
-        <span>36 HB pencils</span>
-      </label>
-    </li>
-    <li>
-      <label>
-        <input type="checkbox" id="i3">
-        <span>4 White erasers</span>
-      </label>
-    </li>
-    <li>
-      <label>
-        <input type="checkbox" id="i4">
-        <span>2 Pencil sharpeners with cover</span>
-      </label>
-    </li>
-    <li>
-      <label>
-        <input type="checkbox" id="i5">
-        <span>2 Large glue sticks</span>
-      </label>
-    </li>
-  </ul>
+  <!-- General Supplies -->
+  <div class="section-card">
+    <div class="section-title">General Supplies (Please label all supplies)</div>
+    <ul>
+      <li><label><input type="checkbox" id="gen_1"><span>1 waterproof school bag - label</span></label></li>
+      <li><label><input type="checkbox" id="gen_2"><span>1 large cloth pencil case (for general supplies)</span></label></li>
+      <li><label><input type="checkbox" id="gen_3"><span>36 HB pencils (good quality)</span></label></li>
+      <li><label><input type="checkbox" id="gen_4"><span>4 white erasers</span></label></li>
+      <li><label><input type="checkbox" id="gen_5"><span>2 pencil sharpeners with cover (good quality)</span></label></li>
+      <li><label><input type="checkbox" id="gen_6"><span>2 large glue sticks</span></label></li>
+      <li><label><input type="checkbox" id="gen_7"><span>1 pair of pointed scissors</span></label></li>
+      <li><label><input type="checkbox" id="gen_8"><span>3 highlighters (3 different colors)</span></label></li>
+      <li><label><input type="checkbox" id="gen_9"><span>6 dry erase markers (fine point)</span></label></li>
+      <li><label><input type="checkbox" id="gen_10"><span>2 dry-erase board erasers</span></label></li>
+      <li><label><input type="checkbox" id="gen_11"><span>2 dry-erase whiteboards</span></label></li>
+      <li><label><input type="checkbox" id="gen_12"><span>1 pair of headphones / earbuds (for laptop use - in a labeled Ziploc)</span></label></li>
+      <li><label><input type="checkbox" id="gen_13"><span>1 plastic envelope folder with Velcro 8-1/2" x 11", labeled with child's name (message & homework folder)</span></label></li>
+      <li><label><input type="checkbox" id="gen_14"><span>Post-it notes 3x3</span></label></li>
+      <li><label><input type="checkbox" id="gen_15"><span>Tissue boxes for the class (optional)</span></label></li>
+      <li><label><input type="checkbox" id="gen_16"><span>Disinfecting wipes for the class (optional)</span></label></li>
+    </ul>
+  </div>
+
+  <!-- English -->
+  <div class="section-card">
+    <div class="section-title">English</div>
+    <ul>
+      <li><label><input type="checkbox" id="eng_1"><span>1 pack of 4 exercise books (32 pgs. - no spirals - suggested brand: Hilroy)</span></label></li>
+      <li><label><input type="checkbox" id="eng_2"><span>1 hard cover 3-ring blue binder - 1.5 inches</span></label></li>
+      <li><label><input type="checkbox" id="eng_3"><span>1 red ballpoint pen for correcting</span></label></li>
+      <li><label><input type="checkbox" id="eng_4"><span>2 plastic duo-tangs with 3 holes and inside pockets: 1 blue and 1 red</span></label></li>
+      <li><label><input type="checkbox" id="eng_5"><span>1 pack of sheet protectors (thick)</span></label></li>
+    </ul>
+  </div>
+
+  <!-- Français -->
+  <div class="section-card">
+    <div class="section-title">Français</div>
+    <ul>
+      <li><label><input type="checkbox" id="fr_1"><span>1 pack of 4 exercise books (32 pgs. - no spirals - suggested brand: Hilroy)</span></label></li>
+      <li><label><input type="checkbox" id="fr_2"><span>3 plastic duo-tangs with 3 holes and inside pockets: 1 blue, 1 black, 1 orange</span></label></li>
+    </ul>
+  </div>
+
+  <!-- Histoire & Géographie -->
+  <div class="section-card">
+    <div class="section-title">Histoire & Géographie</div>
+    <ul>
+      <li><label><input type="checkbox" id="hg_1"><span>1 green plastic duo-tang with 3 holes and inside pockets</span></label></li>
+    </ul>
+  </div>
+
+  <!-- Math -->
+  <div class="section-card">
+    <div class="section-title">Math</div>
+    <ul>
+      <li><label><input type="checkbox" id="math_1"><span>1 plastic 30 cm ruler - labeled</span></label></li>
+      <li><label><input type="checkbox" id="math_2"><span>1 hard cover 3-ring red binder - 1.5 inches</span></label></li>
+      <li><label><input type="checkbox" id="math_3"><span>1 pack of 10 clear plastic sheet protectors</span></label></li>
+      <li><label><input type="checkbox" id="math_4"><span>1 yellow plastic duo-tang with 3 holes and inside pockets</span></label></li>
+      <li><label><input type="checkbox" id="math_5"><span>1 graph paper notebook, 1-inch squares</span></label></li>
+    </ul>
+  </div>
+
+  <!-- Les arts -->
+  <div class="section-card">
+    <div class="section-title">Les arts</div>
+    <ul>
+      <li><label><input type="checkbox" id="art_1"><span>1 construction paper pad</span></label></li>
+      <li><label><input type="checkbox" id="art_2"><span>1 scrapbook (20 sheets, spiral bound, 35.5 x 27.9 cm)</span></label></li>
+      <li><label><input type="checkbox" id="art_3"><span>1 large cloth pencil case (for art)</span></label></li>
+      <li><label><input type="checkbox" id="art_4"><span>1 pack of 12 washable markers</span></label></li>
+      <li><label><input type="checkbox" id="art_5"><span>1 pack of 24 wooden coloring pencils</span></label></li>
+      <li><label><input type="checkbox" id="art_6"><span>1 pair of pointed scissors</span></label></li>
+      <li><label><input type="checkbox" id="art_7"><span>2 permanent markers - black (regular point)</span></label></li>
+      <li><label><input type="checkbox" id="art_8"><span>2 large glue sticks</span></label></li>
+    </ul>
+  </div>
+
+  <!-- CCQ -->
+  <div class="section-card">
+    <div class="section-title">CCQ</div>
+    <ul>
+      <li><label><input type="checkbox" id="ccq_1"><span>1 white plastic duo-tang with 3 holes and inside pockets</span></label></li>
+    </ul>
+  </div>
+
+  <!-- Science -->
+  <div class="section-card">
+    <div class="section-title">Science</div>
+    <ul>
+      <li><label><input type="checkbox" id="sci_1"><span>2-line exercise books (32 pgs. - no spirals - labeled - suggested brand: Hilroy)</span></label></li>
+      <li><label><input type="checkbox" id="sci_2"><span>1 eraser - not labeled</span></label></li>
+      <li><label><input type="checkbox" id="sci_3"><span>12 sharpened HB pencils not labeled</span></label></li>
+    </ul>
+  </div>
+
+  <!-- First Day of School Instructions -->
+  <div class="instructions-card">
+    <h3>Important: For the First Day of School</h3>
+    <ul>
+      <li><strong>Bag 1 (French)</strong>: Label 1 extra-large freezer bag "French" and place all French, Social Studies, Art, and CCQ supplies in the bag.</li>
+      <li><strong>Bag 2 (English)</strong>: Label 1 extra-large bag "English" and place all English and Math supplies in the bag.</li>
+      <li><strong>Bag 3 (Science)</strong>: Label 1 extra-large bag "Science" and place all Science supplies in the bag.</li>
+      <li><strong>Child's Name</strong>: Identify all bags clearly with your child's name. Please label all individual supplies as indicated.</li>
+    </ul>
+  </div>
 
   <script>
     const clientId = 'user_' + Math.random().toString(36).substring(2, 9);
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    const totalItems = checkboxes.length;
     const statusBar = document.getElementById('statusBar');
     const shareNotice = document.getElementById('shareNotice');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
 
-    // Get list identifier from URL parameter or create a random one
+    function updateProgress() {
+      const checkedCount = Array.from(checkboxes).filter(cb => cb.checked).length;
+      const percent = Math.round((checkedCount / totalItems) * 100);
+      progressBar.style.width = percent + '%';
+      progressText.textContent = checkedCount + ' of ' + totalItems + ' items completed (' + percent + '%)';
+    }
+
     function getListId() {
       const urlParams = new URLSearchParams(window.location.search);
       let id = urlParams.get('list');
       if (!id) {
-        id = 'school_' + Math.random().toString(36).substring(2, 8);
+        id = 'willingdon_g3_' + Math.random().toString(36).substring(2, 8);
         const newUrl = window.location.pathname + '?list=' + id;
         window.history.replaceState(null, '', newUrl);
       }
@@ -142,25 +321,25 @@
     }
 
     const listId = getListId();
-    const topic = 'school_supply_' + listId;
+    const topic = 'willingdon_supply_' + listId;
     const sseUrl = 'https://ntfy.sh/' + topic + '/sse';
     const pollUrl = 'https://ntfy.sh/' + topic + '/json?poll=1';
     const postUrl = 'https://ntfy.sh/' + topic;
 
-    // Apply checked list state to UI
     function applyState(checkedIds) {
       checkboxes.forEach(cb => {
         cb.checked = checkedIds.includes(cb.id);
       });
+      updateProgress();
       localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
     }
 
-    // Broadcast current checked state over the internet
     function broadcastState() {
       const checkedIds = Array.from(checkboxes)
         .filter(cb => cb.checked)
         .map(cb => cb.id);
 
+      updateProgress();
       localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
 
       const payload = {
@@ -177,17 +356,18 @@
       });
     }
 
-    // Listen for live updates from the other phone
     function startLiveSync() {
-      // 1. Load initial local backup
       try {
         const saved = JSON.parse(localStorage.getItem('local_state_' + listId) || '[]');
         if (Array.isArray(saved) && saved.length > 0) {
           applyState(saved);
+        } else {
+          updateProgress();
         }
-      } catch (e) {}
+      } catch (e) {
+        updateProgress();
+      }
 
-      // 2. Fetch the latest saved state from cloud
       fetch(pollUrl)
         .then(res => res.text())
         .then(text => {
@@ -209,7 +389,6 @@
         })
         .catch(() => {});
 
-      // 3. Connect real-time event stream
       const eventSource = new EventSource(sseUrl);
 
       eventSource.onopen = () => {
@@ -239,24 +418,29 @@
 
     function copyShareLink() {
       navigator.clipboard.writeText(window.location.href).then(() => {
-        shareNotice.textContent = 'Share link copied. Send this link to the other person.';
+        shareNotice.textContent = 'Share link copied to clipboard. Send this to the other person.';
+        shareNotice.style.display = 'block';
         setTimeout(() => {
-          shareNotice.textContent = '';
+          shareNotice.style.display = 'none';
         }, 5000);
       }).catch(() => {
         shareNotice.textContent = 'Please copy the address from your browser bar to share.';
+        shareNotice.style.display = 'block';
       });
     }
 
     function resetList() {
-      checkboxes.forEach(cb => {
-        cb.checked = false;
-      });
-      broadcastState();
-      shareNotice.textContent = 'List reset on all devices.';
-      setTimeout(() => {
-        shareNotice.textContent = '';
-      }, 3000);
+      if (confirm('Are you sure you want to uncheck all items?')) {
+        checkboxes.forEach(cb => {
+          cb.checked = false;
+        });
+        broadcastState();
+        shareNotice.textContent = 'List reset on all devices.';
+        shareNotice.style.display = 'block';
+        setTimeout(() => {
+          shareNotice.style.display = 'none';
+        }, 3000);
+      }
     }
 
     checkboxes.forEach(cb => {
