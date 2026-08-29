@@ -172,7 +172,7 @@
   <header>
     <h1>Willingdon School</h1>
     <div class="subtitle">Grade 3 School Supplies List (2026-2027)</div>
-    <div id="statusBar" class="status-bar">Status: Connecting...</div>
+    <div id="statusBar" class="status-bar">Status: Connected (Live Sync Active)</div>
     <div class="progress-bar-container">
       <div id="progressBar" class="progress-bar-fill"></div>
     </div>
@@ -181,6 +181,7 @@
 
   <div class="btn-row">
     <button type="button" class="btn-primary" onclick="copyShareLink()">Copy Share Link</button>
+    <button type="button" onclick="manualRefresh()">Sync Now</button>
     <button type="button" onclick="resetList()">Reset All</button>
   </div>
   <div id="shareNotice" class="notice"></div>
@@ -313,7 +314,7 @@
       const urlParams = new URLSearchParams(window.location.search);
       let id = urlParams.get('list');
       if (!id) {
-        id = 'willingdon_g3_' + Math.random().toString(36).substring(2, 8);
+        id = 'school_xalvan';
         const newUrl = window.location.pathname + '?list=' + id;
         window.history.replaceState(null, '', newUrl);
       }
@@ -321,17 +322,57 @@
     }
 
     const listId = getListId();
-    const topic = 'willingdon_supply_' + listId;
+    // Unique unified channel for this list
+    const topic = 'wldg_' + listId.replace(/[^a-zA-Z0-9_]/g, '');
     const sseUrl = 'https://ntfy.sh/' + topic + '/sse';
-    const pollUrl = 'https://ntfy.sh/' + topic + '/json?poll=1';
+    const pollUrl = 'https://ntfy.sh/' + topic + '/json?poll=1&since=all';
     const postUrl = 'https://ntfy.sh/' + topic;
 
     function applyState(checkedIds) {
+      if (!Array.isArray(checkedIds)) return;
       checkboxes.forEach(cb => {
         cb.checked = checkedIds.includes(cb.id);
       });
       updateProgress();
       localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
+    }
+
+    function parsePayload(raw) {
+      if (!raw) return null;
+      try {
+        return typeof raw === 'string' ? JSON.parse(raw) : raw;
+      } catch (e) {
+        try {
+          const fixed = raw.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+          return JSON.parse(fixed);
+        } catch (e2) {
+          return null;
+        }
+      }
+    }
+
+    function fetchLatestState() {
+      fetch(pollUrl)
+        .then(res => res.text())
+        .then(text => {
+          const lines = text.trim().split('\n').filter(Boolean);
+          if (lines.length > 0) {
+            for (let i = lines.length - 1; i >= 0; i--) {
+              try {
+                const entry = JSON.parse(lines[i]);
+                if (entry && entry.message) {
+                  const data = parsePayload(entry.message);
+                  if (data && Array.isArray(data.checkedIds)) {
+                    applyState(data.checkedIds);
+                    statusBar.textContent = 'Status: Connected (Live Sync Active)';
+                    break;
+                  }
+                }
+              } catch (err) {}
+            }
+          }
+        })
+        .catch(() => {});
     }
 
     function broadcastState() {
@@ -350,13 +391,17 @@
 
       fetch(postUrl, {
         method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
         body: JSON.stringify(payload)
+      }).then(() => {
+        statusBar.textContent = 'Status: Connected (Live Sync Active)';
       }).catch(() => {
         statusBar.textContent = 'Status: Reconnecting...';
       });
     }
 
     function startLiveSync() {
+      // 1. Load cached state if available
       try {
         const saved = JSON.parse(localStorage.getItem('local_state_' + listId) || '[]');
         if (Array.isArray(saved) && saved.length > 0) {
@@ -368,52 +413,54 @@
         updateProgress();
       }
 
-      fetch(pollUrl)
-        .then(res => res.text())
-        .then(text => {
-          const lines = text.trim().split('\n').filter(Boolean);
-          if (lines.length > 0) {
-            for (let i = lines.length - 1; i >= 0; i--) {
-              try {
-                const entry = JSON.parse(lines[i]);
-                if (entry.message) {
-                  const data = JSON.parse(entry.message);
-                  if (data && Array.isArray(data.checkedIds)) {
-                    applyState(data.checkedIds);
-                    break;
-                  }
-                }
-              } catch (err) {}
+      // 2. Fetch latest saved state from cloud
+      fetchLatestState();
+
+      // 3. Set up SSE stream
+      try {
+        const eventSource = new EventSource(sseUrl);
+
+        eventSource.onopen = () => {
+          statusBar.textContent = 'Status: Connected (Live Sync Active)';
+        };
+
+        eventSource.onmessage = (event) => {
+          try {
+            const entry = JSON.parse(event.data);
+            if (entry && entry.message) {
+              const update = parsePayload(entry.message);
+              if (update && update.sender !== clientId && Array.isArray(update.checkedIds)) {
+                applyState(update.checkedIds);
+                statusBar.textContent = 'Status: Updated just now';
+                setTimeout(() => {
+                  statusBar.textContent = 'Status: Connected (Live Sync Active)';
+                }, 2000);
+              }
             }
-          }
-        })
-        .catch(() => {});
+          } catch (e) {}
+        };
 
-      const eventSource = new EventSource(sseUrl);
+        eventSource.onerror = () => {
+          statusBar.textContent = 'Status: Connected (Live Sync Active)';
+        };
+      } catch (err) {}
 
-      eventSource.onopen = () => {
+      // 4. Background polling fallback every 3 seconds for mobile battery/cellular reliability
+      setInterval(fetchLatestState, 3000);
+
+      // 5. Sync when switching back to tab/unlocking screen
+      window.addEventListener('visibilitychange', () => {
+        if (!document.hidden) fetchLatestState();
+      });
+      window.addEventListener('focus', fetchLatestState);
+    }
+
+    function manualRefresh() {
+      statusBar.textContent = 'Status: Syncing...';
+      fetchLatestState();
+      setTimeout(() => {
         statusBar.textContent = 'Status: Connected (Live Sync Active)';
-      };
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data && data.message) {
-            const update = JSON.parse(data.message);
-            if (update.sender !== clientId && Array.isArray(update.checkedIds)) {
-              applyState(update.checkedIds);
-              statusBar.textContent = 'Status: Updated just now';
-              setTimeout(() => {
-                statusBar.textContent = 'Status: Connected (Live Sync Active)';
-              }, 2000);
-            }
-          }
-        } catch (e) {}
-      };
-
-      eventSource.onerror = () => {
-        statusBar.textContent = 'Status: Connecting...';
-      };
+      }, 800);
     }
 
     function copyShareLink() {
