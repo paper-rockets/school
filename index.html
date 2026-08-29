@@ -360,32 +360,42 @@
       }
     }
 
-    function checkTopic(t) {
-      return fetch('https://ntfy.sh/' + t + '/json?poll=1&since=all')
-        .then(res => res.text())
-        .then(text => {
+    function fetchLatestState() {
+      const promises = topics.map(t =>
+        fetch('https://ntfy.sh/' + t + '/json?poll=1&since=all')
+          .then(res => res.text())
+          .catch(() => '')
+      );
+
+      Promise.all(promises).then(results => {
+        let bestTimestamp = 0;
+        let bestCheckedIds = null;
+
+        results.forEach(text => {
+          if (!text) return;
           const lines = text.trim().split('\n').filter(Boolean);
-          if (lines.length > 0) {
-            for (let i = lines.length - 1; i >= 0; i--) {
-              try {
-                const entry = JSON.parse(lines[i]);
-                if (entry && entry.message) {
-                  const data = parsePayload(entry.message);
-                  if (data && Array.isArray(data.checkedIds)) {
-                    applyState(data.checkedIds, data.timestamp || entry.time * 1000);
-                    statusBar.textContent = 'Status: Connected (Live Sync Active)';
-                    break;
+          lines.forEach(line => {
+            try {
+              const entry = JSON.parse(line);
+              if (entry && entry.message) {
+                const data = parsePayload(entry.message);
+                if (data && Array.isArray(data.checkedIds)) {
+                  const ts = Number(data.timestamp) || (entry.time * 1000) || 0;
+                  if (ts >= bestTimestamp) {
+                    bestTimestamp = ts;
+                    bestCheckedIds = data.checkedIds;
                   }
                 }
-              } catch (err) {}
-            }
-          }
-        })
-        .catch(() => {});
-    }
+              }
+            } catch (err) {}
+          });
+        });
 
-    function fetchLatestState() {
-      topics.forEach(t => checkTopic(t));
+        if (bestCheckedIds && (bestTimestamp >= lastKnownTimestamp || lastKnownTimestamp === 0)) {
+          applyState(bestCheckedIds, bestTimestamp);
+          statusBar.textContent = 'Status: Connected (Live Sync Active)';
+        }
+      });
     }
 
     function broadcastState() {
@@ -466,10 +476,11 @@
 
     function manualRefresh() {
       statusBar.textContent = 'Status: Syncing...';
+      lastKnownTimestamp = 0;
       fetchLatestState();
       setTimeout(() => {
         statusBar.textContent = 'Status: Connected (Live Sync Active)';
-      }, 600);
+      }, 800);
     }
 
     function copyShareLink() {
