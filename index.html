@@ -6,105 +6,245 @@
   <title>Grade 3 Supply Checklist</title>
   <style>
     body {
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       max-width: 600px;
-      margin: 2rem auto;
+      margin: 1.5rem auto;
       padding: 0 1rem;
+      color: #222;
+      background-color: #fafafa;
+    }
+    h2 {
+      margin-bottom: 0.25rem;
+    }
+    .status-bar {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 1rem;
     }
     .btn-row {
       margin: 1rem 0;
       display: flex;
       gap: 0.5rem;
+      flex-wrap: wrap;
     }
     button {
-      padding: 8px 14px;
+      padding: 10px 16px;
+      font-size: 0.95rem;
       cursor: pointer;
-      border-radius: 4px;
+      border-radius: 6px;
       border: 1px solid #ccc;
-      background-color: #f7f7f7;
+      background-color: #ffffff;
+      color: #333;
     }
-    button:hover {
-      background-color: #eee;
+    button:active {
+      background-color: #e8e8e8;
+    }
+    .notice {
+      color: #1b5e20;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      margin-bottom: 0.5rem;
     }
     ul {
       list-style: none;
       padding: 0;
+      margin: 0;
+      background-color: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
     }
     li {
-      margin: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
     }
-    input:checked + label {
+    li:last-child {
+      border-bottom: none;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      cursor: pointer;
+      font-size: 1rem;
+      user-select: none;
+    }
+    input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      cursor: pointer;
+    }
+    input[type="checkbox"]:checked + span {
       text-decoration: line-through;
-      color: #888;
-    }
-    #shareNotice {
-      color: #2e7d32;
-      font-size: 0.85rem;
-      min-height: 1.2em;
+      color: #888888;
     }
   </style>
 </head>
 <body>
 
   <h2>Grade 3 Supply Checklist</h2>
+  <div id="statusBar" class="status-bar">Status: Connecting...</div>
+
   <div class="btn-row">
-    <button onclick="shareList()">Copy Share Link</button>
-    <button onclick="resetList()">Reset</button>
+    <button type="button" onclick="copyShareLink()">Copy Share Link</button>
+    <button type="button" onclick="resetList()">Reset List</button>
   </div>
-  <p id="shareNotice"></p>
+  <div id="shareNotice" class="notice"></div>
 
   <ul id="list">
-    <li><input type="checkbox" id="i1"><label for="i1"> 1 Waterproof school bag</label></li>
-    <li><input type="checkbox" id="i2"><label for="i2"> 36 HB pencils</label></li>
-    <li><input type="checkbox" id="i3"><label for="i3"> 4 White erasers</label></li>
-    <li><input type="checkbox" id="i4"><label for="i4"> 2 Pencil sharpeners with cover</label></li>
-    <li><input type="checkbox" id="i5"><label for="i5"> 2 Large glue sticks</label></li>
+    <li>
+      <label>
+        <input type="checkbox" id="i1">
+        <span>1 Waterproof school bag</span>
+      </label>
+    </li>
+    <li>
+      <label>
+        <input type="checkbox" id="i2">
+        <span>36 HB pencils</span>
+      </label>
+    </li>
+    <li>
+      <label>
+        <input type="checkbox" id="i3">
+        <span>4 White erasers</span>
+      </label>
+    </li>
+    <li>
+      <label>
+        <input type="checkbox" id="i4">
+        <span>2 Pencil sharpeners with cover</span>
+      </label>
+    </li>
+    <li>
+      <label>
+        <input type="checkbox" id="i5">
+        <span>2 Large glue sticks</span>
+      </label>
+    </li>
   </ul>
 
   <script>
+    const clientId = 'user_' + Math.random().toString(36).substring(2, 9);
     const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-    const STORAGE_KEY = 'supply_list_data';
+    const statusBar = document.getElementById('statusBar');
+    const shareNotice = document.getElementById('shareNotice');
 
-    function loadState() {
-      const hash = window.location.hash.substring(1);
-      let activeIds = [];
-
-      if (hash) {
-        activeIds = hash.split(',').filter(Boolean);
-      } else {
-        try {
-          activeIds = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        } catch (e) {
-          activeIds = [];
-        }
+    // Get list identifier from URL parameter or create a random one
+    function getListId() {
+      const urlParams = new URLSearchParams(window.location.search);
+      let id = urlParams.get('list');
+      if (!id) {
+        id = 'school_' + Math.random().toString(36).substring(2, 8);
+        const newUrl = window.location.pathname + '?list=' + id;
+        window.history.replaceState(null, '', newUrl);
       }
-
-      checkboxes.forEach(cb => {
-        cb.checked = activeIds.includes(cb.id);
-      });
+      return id;
     }
 
-    function saveState() {
+    const listId = getListId();
+    const topic = 'school_supply_' + listId;
+    const sseUrl = 'https://ntfy.sh/' + topic + '/sse';
+    const pollUrl = 'https://ntfy.sh/' + topic + '/json?poll=1';
+    const postUrl = 'https://ntfy.sh/' + topic;
+
+    // Apply checked list state to UI
+    function applyState(checkedIds) {
+      checkboxes.forEach(cb => {
+        cb.checked = checkedIds.includes(cb.id);
+      });
+      localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
+    }
+
+    // Broadcast current checked state over the internet
+    function broadcastState() {
       const checkedIds = Array.from(checkboxes)
         .filter(cb => cb.checked)
         .map(cb => cb.id);
 
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(checkedIds));
-      const hashString = checkedIds.length > 0 ? '#' + checkedIds.join(',') : window.location.pathname;
-      window.history.replaceState(null, '', hashString);
+      localStorage.setItem('local_state_' + listId, JSON.stringify(checkedIds));
+
+      const payload = {
+        sender: clientId,
+        checkedIds: checkedIds,
+        timestamp: Date.now()
+      };
+
+      fetch(postUrl, {
+        method: 'POST',
+        body: JSON.stringify(payload)
+      }).catch(() => {
+        statusBar.textContent = 'Status: Reconnecting...';
+      });
     }
 
-    function shareList() {
-      saveState();
+    // Listen for live updates from the other phone
+    function startLiveSync() {
+      // 1. Load initial local backup
+      try {
+        const saved = JSON.parse(localStorage.getItem('local_state_' + listId) || '[]');
+        if (Array.isArray(saved) && saved.length > 0) {
+          applyState(saved);
+        }
+      } catch (e) {}
+
+      // 2. Fetch the latest saved state from cloud
+      fetch(pollUrl)
+        .then(res => res.text())
+        .then(text => {
+          const lines = text.trim().split('\n').filter(Boolean);
+          if (lines.length > 0) {
+            for (let i = lines.length - 1; i >= 0; i--) {
+              try {
+                const entry = JSON.parse(lines[i]);
+                if (entry.message) {
+                  const data = JSON.parse(entry.message);
+                  if (data && Array.isArray(data.checkedIds)) {
+                    applyState(data.checkedIds);
+                    break;
+                  }
+                }
+              } catch (err) {}
+            }
+          }
+        })
+        .catch(() => {});
+
+      // 3. Connect real-time event stream
+      const eventSource = new EventSource(sseUrl);
+
+      eventSource.onopen = () => {
+        statusBar.textContent = 'Status: Connected (Live Sync Active)';
+      };
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.message) {
+            const update = JSON.parse(data.message);
+            if (update.sender !== clientId && Array.isArray(update.checkedIds)) {
+              applyState(update.checkedIds);
+              statusBar.textContent = 'Status: Updated just now';
+              setTimeout(() => {
+                statusBar.textContent = 'Status: Connected (Live Sync Active)';
+              }, 2000);
+            }
+          }
+        } catch (e) {}
+      };
+
+      eventSource.onerror = () => {
+        statusBar.textContent = 'Status: Connecting...';
+      };
+    }
+
+    function copyShareLink() {
       navigator.clipboard.writeText(window.location.href).then(() => {
-        const notice = document.getElementById('shareNotice');
-        notice.textContent = 'Link copied to clipboard. Anyone opening it will see your current selections.';
+        shareNotice.textContent = 'Share link copied. Send this link to the other person.';
         setTimeout(() => {
-          notice.textContent = '';
-        }, 4000);
+          shareNotice.textContent = '';
+        }, 5000);
       }).catch(() => {
-        const notice = document.getElementById('shareNotice');
-        notice.textContent = 'Failed to copy link automatically. You can copy the URL directly from the address bar.';
+        shareNotice.textContent = 'Please copy the address from your browser bar to share.';
       });
     }
 
@@ -112,11 +252,18 @@
       checkboxes.forEach(cb => {
         cb.checked = false;
       });
-      saveState();
+      broadcastState();
+      shareNotice.textContent = 'List reset on all devices.';
+      setTimeout(() => {
+        shareNotice.textContent = '';
+      }, 3000);
     }
 
-    checkboxes.forEach(cb => cb.addEventListener('change', saveState));
-    window.addEventListener('DOMContentLoaded', loadState);
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', broadcastState);
+    });
+
+    window.addEventListener('DOMContentLoaded', startLiveSync);
   </script>
 </body>
 </html>
