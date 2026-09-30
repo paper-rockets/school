@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#f7f1e7" />
+    <meta
+      name="description"
+      content="Tenfold is a hands-on Grade 3 mathematics workshop with more than 50 visual, interactive lessons."
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <title>Tenfold - Grade 3 math you can touch</title>
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="fonts/fonts.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="expanded.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#lesson">Skip to the lesson</a>
+
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" type="button" data-nav="home" aria-label="Tenfold home">
+          <span class="brand-mark" aria-hidden="true">
+            <i></i><i></i><i></i><i></i><i></i>
+          </span>
+          <span>
+            <strong>Tenfold</strong>
+            <small>Number workshop</small>
+          </span>
+        </button>
+
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <button class="nav-item is-active" type="button" data-nav="home">
+            Home
+          </button>
+          <button class="nav-item" type="button" data-nav="library">
+            Lessons
+          </button>
+          <button class="nav-item" type="button" data-nav="practice">
+            Quick play
+          </button>
+          <button class="nav-item" type="button" data-nav="progress">
+            My path
+          </button>
+        </nav>
+
+        <div class="topbar-tools">
+          <button class="reading-toggle" id="reading-toggle" type="button" role="switch" aria-checked="false" aria-label="Dyslexia-friendly text" data-reading-toggle>
+            <span class="reading-glyph" aria-hidden="true">Aa</span>
+            <span class="reading-toggle-label">Dyslexia-friendly</span>
+            <span class="switch-track" aria-hidden="true"><i></i></span>
+          </button>
+          <div class="progress-chip" aria-label="Learning progress">
+            <span class="progress-dot" aria-hidden="true"></span>
+            <span><strong id="xp-value">0</strong> XP</span>
+          </div>
+        </div>
+      </header>
+
+      <main id="lesson" tabindex="-1"></main>
+
+      <nav class="mobile-nav" aria-label="Primary navigation">
+        <button class="mobile-nav-item is-active" type="button" data-nav="home">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11 12 4l8 7v9H4z" /><path d="M9 20v-6h6v6" /></svg>
+          <span>Home</span>
+        </button>
+        <button class="mobile-nav-item" type="button" data-nav="library">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z" /><path d="M9 4v16M12 8h4M12 12h4" /></svg>
+          <span>Lessons</span>
+        </button>
+        <button class="mobile-nav-item" type="button" data-nav="practice">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M3 12h18" /><circle cx="12" cy="12" r="9" /></svg>
+          <span>Play</span>
+        </button>
+        <button class="mobile-nav-item" type="button" data-nav="progress">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7" /></svg>
+          <span>My path</span>
+        </button>
+      </nav>
+    </div>
+
+    <div id="live-region" class="sr-only" aria-live="polite"></div>
+    <script src="curriculum.js"></script>
+    <script src="engines.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
